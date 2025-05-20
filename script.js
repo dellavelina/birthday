@@ -1,36 +1,42 @@
 document.addEventListener("DOMContentLoaded", () => {
-    // Baca nama dari URL
+    // Ambil nama dari parameter URL
     const urlParams = new URLSearchParams(window.location.search);
     const guestName = urlParams.get('name') || 'Guest';
 
+    // Tampilkan nama di halaman
     document.getElementById('guestName').textContent = guestName;
     document.getElementById('guestNameInput').value = guestName;
 
-    // Handle form submit
-    const form = document.getElementById('rsvpForm');
+    // Handle RSVP Form
+    const rsvpForm = document.getElementById('rsvpForm');
     const confirmation = document.getElementById('confirmation');
 
-    form.addEventListener('submit', (e) => {
+    rsvpForm.addEventListener('submit', (e) => {
         e.preventDefault();
 
-        if (!form.checkValidity()) {
-            form.reportValidity();
+        if (!rsvpForm.checkValidity()) {
+            rsvpForm.reportValidity();
             return;
         }
 
-        const formData = new FormData(form);
+        // Kirim data ke Google Sheets
+        const formData = new FormData(rsvpForm);
+        sendDataToGoogleSheet(formData);
 
-        fetch('https://script.google.com/macros/s/AKfycbyOdDff9mPe_qGnUiMqHkBSLVimAvdvD3HiTwOf4Gti2YUllir5LucFzhuS0USmBxmheQ/exec ', {
+        // Tampilkan konfirmasi
+        rsvpForm.classList.add('hidden');
+        confirmation.classList.remove('hidden');
+    });
+
+    function sendDataToGoogleSheet(formData) {
+        // Ganti dengan URL Google Apps Script Anda
+        const scriptURL = 'https://script.google.com/macros/s/AKfycby0A7ApvDmbVdxG2QJuUcO-EnBSJ7yZYljVHtNoiWN4/exec ';
+        
+        fetch(scriptURL, {
             method: 'POST',
             body: formData
         })
-        .then(response => {
-            console.log('Success!', response);
-            form.classList.add('hidden');
-            confirmation.classList.remove('hidden');
-        })
-        .catch(error => {
-            console.error('Error!', error.message);
-        });
-    });
+        .then(response => console.log('Success!', response))
+        .catch(error => console.error('Error!', error.message));
+    }
 });

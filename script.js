@@ -28,8 +28,7 @@ document.addEventListener("DOMContentLoaded", function () {
         saveRSVPToLocalStorage(guestName, formData);
 
         // Send data to Google Sheets
-        // Note: This URL should be replaced with your actual Google Script URL
-        fetch('https://script.google.com/macros/s/AKfycbzNyeGcwBgB3pp8jdegi8Tbd8mGH1zJUaJNDtKI_LLjFhlxw2XKdIZc5dD6x7_Q0ZSZWw/exec', {
+        fetch('https://script.google.com/macros/s/AKfycby0A7ApvDmbVdxG2QJuUcO-EnBSJ7yZYljVHtNoiWN4/dev', {
             method: 'POST',
             body: formData
         })

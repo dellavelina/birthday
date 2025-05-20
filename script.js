@@ -1,17 +1,20 @@
 document.addEventListener("DOMContentLoaded", function () {
+    // Baca nama dari parameter URL
     const urlParams = new URLSearchParams(window.location.search);
     const guestName = urlParams.get('name') || 'Guest';
 
-    // Tampilkan nama tamu
+    // Tampilkan nama di halaman
     document.getElementById('guestName').textContent = guestName;
     document.getElementById('guestNameInput').value = guestName;
 
+    // Element form dan konfirmasi
     const form = document.getElementById('rsvpForm');
     const confirmation = document.getElementById('confirmation');
 
-    // Cek apakah sudah ada data untuk nama ini
+    // Cek apakah sudah ada RSVP sebelumnya
     checkExistingRSVP(guestName);
 
+    // Handle submit form
     form.addEventListener('submit', function (e) {
         e.preventDefault();
 
@@ -22,7 +25,7 @@ document.addEventListener("DOMContentLoaded", function () {
 
         const formData = new FormData(form);
 
-        fetch('https://script.google.com/macros/s/AKfycbyM2_KvzjHmODVwr7-r8ntvO1m6BLjYjUGfL1jjFY76_8gQBDyVEL13tKVb0fhh-d4Cig/exec ', {
+        fetch('https://script.google.com/macros/s/AKfycbw2oEhxVW4aPH78CVlWpiZ6q3Qi6pWtbABEIC3hRNuqk2GZ3aXADOF6qnR5GiM6NGEsBA/exec ', {
             method: 'POST',
             body: formData
         })
@@ -40,13 +43,13 @@ document.addEventListener("DOMContentLoaded", function () {
         });
     });
 
-    // Fungsi cek apakah sudah ada RSVP
+    // Fungsi cek RSVP sebelumnya
     function checkExistingRSVP(name) {
-        fetch('https://script.google.com/macros/s/AKfycbyM2_KvzjHmODVwr7-r8ntvO1m6BLjYjUGfL1jjFY76_8gQBDyVEL13tKVb0fhh-d4Cig/exec?name= ' + encodeURIComponent(name))
+        fetch('https://script.google.com/macros/s/AKfycbw2oEhxVW4aPH78CVlWpiZ6q3Qi6pWtbABEIC3hRNuqk2GZ3aXADOF6qnR5GiM6NGEsBA/exec?name= ' + encodeURIComponent(name))
             .then(res => res.json())
             .then(data => {
                 if (data && data.attendance) {
-                    document.querySelector(`[name="attendance"][value="${data.attendance}"]`).checked = true;
+                    document.querySelector(`[name="attendance"][value="${data.attendance}"]`).selected = true;
                     document.querySelector('[name="guests"]').value = data.guests || 0;
                     confirmation.textContent = "You've already RSVP'd!";
                     confirmation.classList.remove('hidden');

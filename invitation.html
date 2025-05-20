@@ -20,20 +20,14 @@
                 <p>Location: 123 Fun Street, City</p>
             </div>
 
-            <!-- Map -->
-            <div class="map">
-                <iframe src="https://maps.google.com/maps?q=123%20Fun%20Street&t=&z=13&ie=UTF8&iwloc=&output=embed " 
-                        allowfullscreen></iframe>
-            </div>
-
             <!-- RSVP Form -->
             <div class="rsvp">
                 <h3>RSVP Now</h3>
                 <form id="rsvpForm">
-                    <input type="hidden" id="guestNameInput" name="name">
+                    <input type="hidden" id="guestNameInput" name="NAME">
                     <label>
                         Will you attend?
-                        <select name="attendance" required>
+                        <select name="ATTENDANCE" required>
                             <option value="">Select...</option>
                             <option value="yes">Yes, I'll come</option>
                             <option value="no">No, I can't come</option>
@@ -41,7 +35,7 @@
                     </label>
                     <label>
                         Number of guests:
-                        <input type="number" name="guests" min="0" max="10" value="0">
+                        <input type="number" name="GUESTS" min="0" max="10" value="0">
                     </label>
                     <button type="submit">Submit RSVP</button>
                 </form>

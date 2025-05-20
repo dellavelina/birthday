@@ -28,19 +28,40 @@ document.addEventListener("DOMContentLoaded", function () {
         saveRSVPToLocalStorage(guestName, formData);
 
         // Send data to Google Sheets
-        fetch('https://script.google.com/macros/s/AKfycby0A7ApvDmbVdxG2QJuUcO-EnBSJ7yZYljVHtNoiWN4/dev', {
-            method: 'POST',
-            body: formData
+        // Create an object with the data in the format expected by the Google Script
+        const sheetData = {
+            NAME: guestName,
+            ATTENDANCE: formData.get('ATTENDANCE'),
+            GUESTS: formData.get('GUESTS'),
+            SHEET_ID: '1lPI4zmazM-GNmo73kD687nGh3zXXK5isvzuUF9nW5vU',
+            SHEET_NAME: 'Sheet1'  // Change this if your sheet has a different name
+        };
+        
+        console.log('Sending data to Google Sheets:', sheetData);
+        
+        // Convert the data to URL parameters for the GET request
+        const params = new URLSearchParams();
+        for (const key in sheetData) {
+            params.append(key, sheetData[key]);
+        }
+        
+        const scriptUrl = `https://script.google.com/macros/s/AKfycby0A7ApvDmbVdxG2QJuUcO-EnBSJ7yZYljVHtNoiWN4/dev?${params.toString()}`;
+        console.log('Request URL:', scriptUrl);
+        
+        // Send the data to Google Sheets via the Google Script URL
+        fetch(scriptUrl, {
+            method: 'GET',
+            mode: 'no-cors'  // This is important for CORS issues with Google Scripts
         })
         .then(response => {
-            console.log('Success:', response);
+            console.log('Response received:', response);
             form.classList.add('hidden');
-            confirmation.textContent = "Thank you! Your RSVP has been saved.";
+            confirmation.textContent = "Thank you! Your RSVP has been saved to our spreadsheet.";
             confirmation.classList.remove('hidden');
         })
         .catch(error => {
             console.error('Error:', error.message);
-            confirmation.textContent = "Oops! Something went wrong. Please try again.";
+            confirmation.textContent = "Your RSVP is saved locally. We'll try to sync with our spreadsheet later.";
             confirmation.classList.remove('hidden');
         });
     });

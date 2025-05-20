@@ -87,7 +87,7 @@ function sendRSVPWithFallback(name, attendance, guests) {
 function sendWithFetch(name, attendance, guests) {
     return new Promise((resolve, reject) => {
         // Make sure to use the correct Apps Script URL
-        const scriptUrl = "https://script.google.com/macros/s/AKfycby0A7ApvDmbVdxG2QJuUcO-EnBSJ7yZYljVHtNoiWN4/exec";
+        const scriptUrl = "https://script.google.com/macros/s/AKfycby0A7ApvDmbVdxG2QJuUcO-EnBSJ7yZYljVHtNoiWN4/dev";
         const url = `${scriptUrl}?NAME=${encodeURIComponent(name)}&ATTENDANCE=${encodeURIComponent(attendance)}&GUESTS=${encodeURIComponent(guests)}`;
         
         fetch(url, {
@@ -129,7 +129,7 @@ function sendWithJSONP(name, attendance, guests) {
         };
         
         // Make sure to use the correct Apps Script URL
-        const scriptUrl = "https://script.google.com/macros/s/AKfycby0A7ApvDmbVdxG2QJuUcO-EnBSJ7yZYljVHtNoiWN4/exec";
+        const scriptUrl = "https://script.google.com/macros/s/AKfycby0A7ApvDmbVdxG2QJuUcO-EnBSJ7yZYljVHtNoiWN4/dev";
         const url = `${scriptUrl}?NAME=${encodeURIComponent(name)}&ATTENDANCE=${encodeURIComponent(attendance)}&GUESTS=${encodeURIComponent(guests)}&callback=${callback}`;
         
         // Add script to page

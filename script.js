@@ -1,5 +1,4 @@
 document.addEventListener("DOMContentLoaded", function () {
-    // Baca nama dari parameter URL
     const urlParams = new URLSearchParams(window.location.search);
     const guestName = urlParams.get('name') || 'Guest';
 
@@ -7,7 +6,6 @@ document.addEventListener("DOMContentLoaded", function () {
     document.getElementById('guestName').textContent = guestName;
     document.getElementById('guestNameInput').value = guestName;
 
-    // Element form dan konfirmasi
     const form = document.getElementById('rsvpForm');
     const confirmation = document.getElementById('confirmation');
 
@@ -25,7 +23,11 @@ document.addEventListener("DOMContentLoaded", function () {
 
         const formData = new FormData(form);
 
-        fetch('https://script.google.com/macros/s/AKfycbw2oEhxVW4aPH78CVlWpiZ6q3Qi6pWtbABEIC3hRNuqk2GZ3aXADOF6qnR5GiM6NGEsBA/exec ', {
+        // Simpan data ke localStorage
+        saveRSVPToLocalStorage(guestName, formData);
+
+        // Kirim data ke Google Sheets
+        fetch('https://script.google.com/macros/s/AKfycbzNyeGcwBgB3pp8jdegi8Tbd8mGH1zJUaJNDtKI_LLjFhlxw2XKdIZc5dD6x7_Q0ZSZWw/exec ', {
             method: 'POST',
             body: formData
         })
@@ -45,19 +47,28 @@ document.addEventListener("DOMContentLoaded", function () {
 
     // Fungsi cek RSVP sebelumnya
     function checkExistingRSVP(name) {
-        fetch('https://script.google.com/macros/s/AKfycbw2oEhxVW4aPH78CVlWpiZ6q3Qi6pWtbABEIC3hRNuqk2GZ3aXADOF6qnR5GiM6NGEsBA/exec?name= ' + encodeURIComponent(name))
-            .then(res => res.json())
-            .then(data => {
-                if (data && data.attendance) {
-                    document.querySelector(`[name="attendance"][value="${data.attendance}"]`).selected = true;
-                    document.querySelector('[name="guests"]').value = data.guests || 0;
-                    confirmation.textContent = "You've already RSVP'd!";
-                    confirmation.classList.remove('hidden');
-                    form.classList.add('hidden');
-                }
-            })
-            .catch(() => {
-                // Tidak ada data sebelumnya
-            });
+        const storedRSVP = getRSVPFromLocalStorage(name);
+        if (storedRSVP) {
+            document.querySelector(`[name="attendance"][value="${storedRSVP.attendance}"]`).selected = true;
+            document.querySelector('[name="guests"]').value = storedRSVP.guests || 0;
+            confirmation.textContent = "You've already RSVP'd!";
+            confirmation.classList.remove('hidden');
+            form.classList.add('hidden');
+        }
+    }
+
+    // Simpan RSVP ke localStorage
+    function saveRSVPToLocalStorage(name, formData) {
+        const rsvpData = {
+            attendance: formData.get('ATTENDANCE'),
+            guests: formData.get('GUESTS')
+        };
+        localStorage.setItem(`rsvp_${name}`, JSON.stringify(rsvpData));
+    }
+
+    // Ambil RSVP dari localStorage
+    function getRSVPFromLocalStorage(name) {
+        const storedData = localStorage.getItem(`rsvp_${name}`);
+        return storedData ? JSON.parse(storedData) : null;
     }
 });

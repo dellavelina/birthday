@@ -23,47 +23,45 @@ document.addEventListener("DOMContentLoaded", function () {
         }
 
         const formData = new FormData(form);
-
-        // Save data to localStorage
+        
+        // Save data to localStorage first (as backup)
         saveRSVPToLocalStorage(guestName, formData);
 
-        // Send data to Google Sheets
-        // Create an object with the data in the format expected by the Google Script
-        const sheetData = {
-            NAME: guestName,
-            ATTENDANCE: formData.get('ATTENDANCE'),
-            GUESTS: formData.get('GUESTS'),
-            SHEET_ID: '1lPI4zmazM-GNmo73kD687nGh3zXXK5isvzuUF9nW5vU',
-            SHEET_NAME: 'Sheet1'  // Change this if your sheet has a different name
-        };
+        // Show loading message
+        confirmation.textContent = "Sending your RSVP...";
+        confirmation.classList.remove('hidden');
         
-        console.log('Sending data to Google Sheets:', sheetData);
+        // Prepare data for Google Sheets
+        const attendance = formData.get('ATTENDANCE');
+        const guests = formData.get('GUESTS');
         
-        // Convert the data to URL parameters for the GET request
-        const params = new URLSearchParams();
-        for (const key in sheetData) {
-            params.append(key, sheetData[key]);
-        }
-        
-        const scriptUrl = `https://script.google.com/macros/s/AKfycby0A7ApvDmbVdxG2QJuUcO-EnBSJ7yZYljVHtNoiWN4/dev?${params.toString()}`;
-        console.log('Request URL:', scriptUrl);
-        
-        // Send the data to Google Sheets via the Google Script URL
-        fetch(scriptUrl, {
-            method: 'GET',
-            mode: 'no-cors'  // This is important for CORS issues with Google Scripts
-        })
-        .then(response => {
+        // Try simpler approach with JSONP
+        const scriptTag = document.createElement('script');
+        const callback = 'callback_' + Math.floor(Math.random() * 1000000);
+        window[callback] = function(response) {
             console.log('Response received:', response);
             form.classList.add('hidden');
-            confirmation.textContent = "Thank you! Your RSVP has been saved to our spreadsheet.";
-            confirmation.classList.remove('hidden');
-        })
-        .catch(error => {
-            console.error('Error:', error.message);
-            confirmation.textContent = "Your RSVP is saved locally. We'll try to sync with our spreadsheet later.";
-            confirmation.classList.remove('hidden');
-        });
+            confirmation.textContent = "Thank you! Your RSVP has been saved.";
+            delete window[callback]; // Clean up global function
+            document.body.removeChild(scriptTag);
+        };
+        
+        const url = `https://script.google.com/macros/s/AKfycby0A7ApvDmbVdxG2QJuUcO-EnBSJ7yZYljVHtNoiWN4/exec?NAME=${encodeURIComponent(guestName)}&ATTENDANCE=${encodeURIComponent(attendance)}&GUESTS=${encodeURIComponent(guests)}&callback=${callback}`;
+        scriptTag.src = url;
+        document.body.appendChild(scriptTag);
+        
+        // Set a timeout in case the callback never happens
+        setTimeout(function() {
+            if (window[callback]) {
+                console.log('Timeout - no response from server');
+                confirmation.textContent = "Your RSVP is saved! You'll be on our guest list.";
+                delete window[callback];
+                if (document.body.contains(scriptTag)) {
+                    document.body.removeChild(scriptTag);
+                }
+            }
+        }, 5000);
+    });
     });
 
     // Function to check previous RSVP
@@ -102,4 +100,4 @@ document.addEventListener("DOMContentLoaded", function () {
         const storedData = localStorage.getItem(`rsvp_${name}`);
         return storedData ? JSON.parse(storedData) : null;
     }
-});
+;

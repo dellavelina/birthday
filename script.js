@@ -1,18 +1,19 @@
 document.addEventListener("DOMContentLoaded", function () {
+    // Get guest name from URL parameter
     const urlParams = new URLSearchParams(window.location.search);
     const guestName = urlParams.get('name') || 'Guest';
 
-    // Tampilkan nama di halaman
+    // Display name on the page
     document.getElementById('guestName').textContent = guestName;
     document.getElementById('guestNameInput').value = guestName;
 
     const form = document.getElementById('rsvpForm');
     const confirmation = document.getElementById('confirmation');
 
-    // Cek apakah sudah ada RSVP sebelumnya
+    // Check if there's an existing RSVP
     checkExistingRSVP(guestName);
 
-    // Handle submit form
+    // Handle form submission
     form.addEventListener('submit', function (e) {
         e.preventDefault();
 
@@ -23,17 +24,17 @@ document.addEventListener("DOMContentLoaded", function () {
 
         const formData = new FormData(form);
 
-        // Simpan data ke localStorage
+        // Save data to localStorage
         saveRSVPToLocalStorage(guestName, formData);
 
-        // Kirim data ke Google Sheets
-        fetch('https://script.google.com/macros/s/AKfycbzNyeGcwBgB3pp8jdegi8Tbd8mGH1zJUaJNDtKI_LLjFhlxw2XKdIZc5dD6x7_Q0ZSZWw/exec ', {
+        // Send data to Google Sheets
+        // Note: This URL should be replaced with your actual Google Script URL
+        fetch('https://script.google.com/macros/s/AKfycbzNyeGcwBgB3pp8jdegi8Tbd8mGH1zJUaJNDtKI_LLjFhlxw2XKdIZc5dD6x7_Q0ZSZWw/exec', {
             method: 'POST',
             body: formData
         })
-        .then(response => response.json())
-        .then(data => {
-            console.log('Success:', data);
+        .then(response => {
+            console.log('Success:', response);
             form.classList.add('hidden');
             confirmation.textContent = "Thank you! Your RSVP has been saved.";
             confirmation.classList.remove('hidden');
@@ -45,19 +46,29 @@ document.addEventListener("DOMContentLoaded", function () {
         });
     });
 
-    // Fungsi cek RSVP sebelumnya
+    // Function to check previous RSVP
     function checkExistingRSVP(name) {
         const storedRSVP = getRSVPFromLocalStorage(name);
         if (storedRSVP) {
-            document.querySelector(`[name="attendance"][value="${storedRSVP.attendance}"]`).selected = true;
-            document.querySelector('[name="guests"]').value = storedRSVP.guests || 0;
-            confirmation.textContent = "You've already RSVP'd!";
+            // Find and select the correct option in the dropdown
+            const attendanceSelect = form.querySelector('[name="ATTENDANCE"]');
+            for (let i = 0; i < attendanceSelect.options.length; i++) {
+                if (attendanceSelect.options[i].value === storedRSVP.attendance) {
+                    attendanceSelect.options[i].selected = true;
+                    break;
+                }
+            }
+            
+            // Set number of guests
+            form.querySelector('[name="GUESTS"]').value = storedRSVP.guests || 0;
+            
+            // Show confirmation and hide form
+            confirmation.textContent = "You've already RSVP'd! You can update your response below.";
             confirmation.classList.remove('hidden');
-            form.classList.add('hidden');
         }
     }
 
-    // Simpan RSVP ke localStorage
+    // Save RSVP to localStorage
     function saveRSVPToLocalStorage(name, formData) {
         const rsvpData = {
             attendance: formData.get('ATTENDANCE'),
@@ -66,7 +77,7 @@ document.addEventListener("DOMContentLoaded", function () {
         localStorage.setItem(`rsvp_${name}`, JSON.stringify(rsvpData));
     }
 
-    // Ambil RSVP dari localStorage
+    // Get RSVP from localStorage
     function getRSVPFromLocalStorage(name) {
         const storedData = localStorage.getItem(`rsvp_${name}`);
         return storedData ? JSON.parse(storedData) : null;

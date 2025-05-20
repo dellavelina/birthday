@@ -1,0 +1,253 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Birthday Invitation Generator</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #ffecd2 0%, #fcb69f 100%);
+            color: #333;
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+        
+        .generator-container {
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+            overflow: hidden;
+            width: 100%;
+            max-width: 600px;
+            padding: 40px;
+            text-align: center;
+        }
+        
+        h1 {
+            color: #ff6b6b;
+            margin-bottom: 30px;
+            font-size: 2.5rem;
+        }
+        
+        p {
+            margin-bottom: 20px;
+            font-size: 1.1rem;
+            line-height: 1.6;
+        }
+        
+        input[type="text"] {
+            width: 100%;
+            padding: 12px 15px;
+            margin-bottom: 20px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            font-size: 1rem;
+        }
+        
+        .guest-list {
+            margin: 20px 0;
+            text-align: left;
+            background: #f9f9f9;
+            padding: 15px;
+            border-radius: 5px;
+            max-height: 200px;
+            overflow-y: auto;
+        }
+        
+        .guest-list h2 {
+            margin-bottom: 10px;
+            font-size: 1.2rem;
+            color: #555;
+        }
+        
+        .guest-list ul {
+            list-style-type: none;
+        }
+        
+        .guest-list li {
+            padding: 8px 5px;
+            border-bottom: 1px solid #eee;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .guest-list li:last-child {
+            border-bottom: none;
+        }
+        
+        .guest-list a {
+            color: #2196F3;
+            text-decoration: none;
+        }
+        
+        .guest-list a:hover {
+            text-decoration: underline;
+        }
+        
+        button {
+            background: #ff6b6b;
+            color: white;
+            border: none;
+            padding: 12px 25px;
+            border-radius: 30px;
+            font-size: 1rem;
+            font-weight: bold;
+            cursor: pointer;
+            transition: background 0.3s ease;
+        }
+        
+        button:hover {
+            background: #ff5252;
+        }
+        
+        .button-container {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 20px;
+        }
+        
+        .secondary-button {
+            background: #6c757d;
+        }
+        
+        .secondary-button:hover {
+            background: #5a6268;
+        }
+    </style>
+</head>
+<body>
+    <div class="generator-container">
+        <h1>Birthday Invitation Generator</h1>
+        <p>Create personalized birthday invitations for your guests</p>
+        
+        <div id="guestForm">
+            <input type="text" id="guestNameInput" placeholder="Enter guest name" required>
+            <button id="addGuestBtn">Add Guest</button>
+        </div>
+        
+        <div class="guest-list">
+            <h2>Guest List</h2>
+            <ul id="guestList"></ul>
+        </div>
+        
+        <div class="button-container">
+            <button class="secondary-button" id="clearListBtn">Clear List</button>
+            <button id="generateSpreadsheetBtn">Generate Spreadsheet</button>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const guestNameInput = document.getElementById('guestNameInput');
+            const addGuestBtn = document.getElementById('addGuestBtn');
+            const guestList = document.getElementById('guestList');
+            const clearListBtn = document.getElementById('clearListBtn');
+            const generateSpreadsheetBtn = document.getElementById('generateSpreadsheetBtn');
+            
+            // Load existing guests from localStorage
+            loadGuests();
+            
+            // Add guest event
+            addGuestBtn.addEventListener('click', function() {
+                addGuest();
+            });
+            
+            // Allow pressing Enter to add a guest
+            guestNameInput.addEventListener('keypress', function(e) {
+                if (e.key === 'Enter') {
+                    addGuest();
+                }
+            });
+            
+            // Clear list event
+            clearListBtn.addEventListener('click', function() {
+                if (confirm('Are you sure you want to clear the entire guest list?')) {
+                    localStorage.removeItem('birthdayGuests');
+                    loadGuests();
+                }
+            });
+            
+            // Generate spreadsheet event
+            generateSpreadsheetBtn.addEventListener('click', function() {
+                const guests = JSON.parse(localStorage.getItem('birthdayGuests') || '[]');
+                if (guests.length === 0) {
+                    alert('Please add at least one guest first.');
+                    return;
+                }
+                
+                // Create CSV content
+                let csvContent = 'No,NAME,RSVP STATUS,GUEST,LINK\n';
+                guests.forEach((guest, index) => {
+                    const link = `https://dellavelina.github.io/birthday/invitation.html?name=${encodeURIComponent(guest)}`;
+                    csvContent += `${index + 1},${guest},-,0,${link}\n`;
+                });
+                
+                // Create and download CSV file
+                const blob = new Blob([csvContent], { type: 'text/csv' });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = 'guest_list.csv';
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                URL.revokeObjectURL(url);
+            });
+            
+            // Function to add a guest
+            function addGuest() {
+                const name = guestNameInput.value.trim();
+                if (!name) {
+                    alert('Please enter a guest name.');
+                    return;
+                }
+                
+                // Save to localStorage
+                const guests = JSON.parse(localStorage.getItem('birthdayGuests') || '[]');
+                if (!guests.includes(name)) {
+                    guests.push(name);
+                    localStorage.setItem('birthdayGuests', JSON.stringify(guests));
+                    loadGuests();
+                    guestNameInput.value = '';
+                } else {
+                    alert('This guest is already on the list.');
+                }
+            }
+            
+            // Function to load guests from localStorage
+            function loadGuests() {
+                const guests = JSON.parse(localStorage.getItem('birthdayGuests') || '[]');
+                guestList.innerHTML = '';
+                
+                if (guests.length === 0) {
+                    guestList.innerHTML = '<li>No guests added yet.</li>';
+                    return;
+                }
+                
+                guests.forEach((guest, index) => {
+                    const li = document.createElement('li');
+                    const invitationLink = `invitation.html?name=${encodeURIComponent(guest)}`;
+                    
+                    li.innerHTML = `
+                        <span>${index + 1}. ${guest}</span>
+                        <a href="${invitationLink}" target="_blank">View Invitation</a>
+                    `;
+                    
+                    guestList.appendChild(li);
+                });
+            }
+        });
+    </script>
+</body>
+</html>

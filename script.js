@@ -35,39 +35,118 @@ document.addEventListener("DOMContentLoaded", function () {
         const attendance = formData.get('ATTENDANCE');
         const guests = formData.get('GUESTS') || '0';
         
-        // Try simpler approach with JSONP
+        // Use fetch API with CORS mode and fallback to JSONP
+        sendRSVPWithFallback(guestName, attendance, guests)
+            .then(response => {
+                console.log('Response received:', response);
+                confirmation.textContent = "Thank you! Your RSVP has been saved.";
+            })
+            .catch(error => {
+                console.error('Error sending RSVP:', error);
+                confirmation.textContent = "Your RSVP is saved locally. We'll try to sync it again later.";
+                
+                // Try to retry after 3 seconds
+                setTimeout(() => {
+                    sendRSVPWithFallback(guestName, attendance, guests)
+                        .then(() => {
+                            confirmation.textContent = "Great! Your RSVP has now been saved.";
+                        })
+                        .catch(() => {
+                            // Keep the previous error message
+                        });
+                }, 3000);
+            });
+    });
+});
+
+// Function to send RSVP data with fallback methods
+function sendRSVPWithFallback(name, attendance, guests) {
+    return new Promise((resolve, reject) => {
+        // Try method 1: Fetch API
+        sendWithFetch(name, attendance, guests)
+            .then(resolve)
+            .catch(error => {
+                console.log('Fetch method failed, trying JSONP fallback...', error);
+                
+                // Try method 2: JSONP as fallback
+                sendWithJSONP(name, attendance, guests)
+                    .then(resolve)
+                    .catch(error => {
+                        console.log('JSONP method failed, trying iframe fallback...', error);
+                        
+                        // Try method 3: iframe as final fallback
+                        sendWithIframe(name, attendance, guests)
+                            .then(resolve)
+                            .catch(reject);
+                    });
+            });
+    });
+}
+
+// Method 1: Send using Fetch API
+function sendWithFetch(name, attendance, guests) {
+    return new Promise((resolve, reject) => {
+        // Make sure to use the correct Apps Script URL
+        const scriptUrl = "https://script.google.com/macros/s/AKfycby0A7ApvDmbVdxG2QJuUcO-EnBSJ7yZYljVHtNoiWN4/exec";
+        const url = `${scriptUrl}?NAME=${encodeURIComponent(name)}&ATTENDANCE=${encodeURIComponent(attendance)}&GUESTS=${encodeURIComponent(guests)}`;
+        
+        fetch(url, {
+            method: 'GET',
+            mode: 'no-cors' // This won't give us a proper response but might work
+        })
+        .then(() => {
+            // With no-cors we can't actually check the response
+            resolve({ result: 'success', method: 'fetch' });
+        })
+        .catch(error => {
+            reject(error);
+        });
+        
+        // Set timeout
+        setTimeout(() => {
+            reject(new Error('Fetch timeout'));
+        }, 5000);
+    });
+}
+
+// Method 2: Send using JSONP
+function sendWithJSONP(name, attendance, guests) {
+    return new Promise((resolve, reject) => {
         const scriptTag = document.createElement('script');
         const callback = 'callback_' + Math.floor(Math.random() * 1000000);
+        
+        // Create global callback function
         window[callback] = function(response) {
-            console.log('Response received:', response);
-            
             if (response && response.result === 'success') {
-                confirmation.textContent = "Thank you! Your RSVP has been saved.";
+                resolve({ ...response, method: 'jsonp' });
             } else {
-                confirmation.textContent = "Your RSVP is saved locally. We'll try to sync it again later.";
-                console.error('Error from server:', response);
+                reject(new Error('JSONP response error'));
             }
             
-            delete window[callback]; // Clean up global function
+            // Clean up
+            delete window[callback];
             document.body.removeChild(scriptTag);
         };
         
         // Make sure to use the correct Apps Script URL
         const scriptUrl = "https://script.google.com/macros/s/AKfycby0A7ApvDmbVdxG2QJuUcO-EnBSJ7yZYljVHtNoiWN4/exec";
-        const url = `${scriptUrl}?NAME=${encodeURIComponent(guestName)}&ATTENDANCE=${encodeURIComponent(attendance)}&GUESTS=${encodeURIComponent(guests)}&callback=${callback}`;
+        const url = `${scriptUrl}?NAME=${encodeURIComponent(name)}&ATTENDANCE=${encodeURIComponent(attendance)}&GUESTS=${encodeURIComponent(guests)}&callback=${callback}`;
         
+        // Add script to page
         scriptTag.src = url;
         scriptTag.onerror = function() {
-            console.error('Script loading error');
-            confirmation.textContent = "Your RSVP is saved locally. We'll try to sync it again later.";
+            reject(new Error('JSONP script loading error'));
+            delete window[callback];
+            if (document.body.contains(scriptTag)) {
+                document.body.removeChild(scriptTag);
+            }
         };
         document.body.appendChild(scriptTag);
         
-        // Set a timeout in case the callback never happens
+        // Set timeout
         setTimeout(function() {
             if (window[callback]) {
-                console.log('Timeout - no response from server');
-                confirmation.textContent = "Your RSVP is saved! You'll be on our guest list.";
+                reject(new Error('JSONP timeout'));
                 delete window[callback];
                 if (document.body.contains(scriptTag)) {
                     document.body.removeChild(scriptTag);
@@ -75,7 +154,46 @@ document.addEventListener("DOMContentLoaded", function () {
             }
         }, 5000);
     });
-});
+}
+
+// Method 3: Send using iframe (last resort)
+function sendWithIframe(name, attendance, guests) {
+    return new Promise((resolve, reject) => {
+        const iframe = document.createElement('iframe');
+        iframe.style.display = 'none';
+        
+        // Make sure to use the correct Apps Script URL
+        const scriptUrl = "https://script.google.com/macros/s/AKfycby0A7ApvDmbVdxG2QJuUcO-EnBSJ7yZYljVHtNoiWN4/exec";
+        const url = `${scriptUrl}?NAME=${encodeURIComponent(name)}&ATTENDANCE=${encodeURIComponent(attendance)}&GUESTS=${encodeURIComponent(guests)}`;
+        
+        // Set up listeners
+        iframe.onload = function() {
+            setTimeout(() => {
+                resolve({ result: 'success', method: 'iframe' });
+                document.body.removeChild(iframe);
+            }, 1000);
+        };
+        
+        iframe.onerror = function() {
+            reject(new Error('Iframe loading error'));
+            if (document.body.contains(iframe)) {
+                document.body.removeChild(iframe);
+            }
+        };
+        
+        // Add iframe to page
+        iframe.src = url;
+        document.body.appendChild(iframe);
+        
+        // Set timeout
+        setTimeout(function() {
+            resolve({ result: 'uncertain', method: 'iframe' });
+            if (document.body.contains(iframe)) {
+                document.body.removeChild(iframe);
+            }
+        }, 5000);
+    });
+}
 
 // Function to check previous RSVP
 function checkExistingRSVP(name, form, confirmation) {

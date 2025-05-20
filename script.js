@@ -1,44 +1,29 @@
-// index.html: Redirect dengan nama tamu sebagai parameter
 document.addEventListener('DOMContentLoaded', () => {
-    const form = document.getElementById('guestForm');
-    const nameInput = document.getElementById('guestName');
-
-    form.addEventListener('submit', (e) => {
-        e.preventDefault();
-        const guestName = encodeURIComponent(nameInput.value.trim());
-        if (guestName) {
-            window.location.href = `invitation.html?name=${guestName}`;
-        }
-    });
-});
-
-    document.addEventListener('DOMContentLoaded', () => {
-    // 1. Baca nama dari URL parameter
+    // Ambil nama dari parameter URL
     const urlParams = new URLSearchParams(window.location.search);
-    const encodedName = urlParams.get('name');
-    const decodedName = encodedName ? decodeURIComponent(encodedName) : 'Guest';
-    
-    // 2. Tampilkan nama di halaman
-    document.getElementById('guestName').textContent = decodedName;
-    document.getElementById('guestNameInput').value = decodedName;
+    const guestName = urlParams.get('name') || 'Guest';
 
-    // 3. Handle form RSVP
+    // Tampilkan nama di halaman
+    document.getElementById('guestName').textContent = guestName;
+    document.getElementById('guestNameInput').value = guestName;
+
+    // Handle RSVP Form
     const rsvpForm = document.getElementById('rsvpForm');
     const confirmation = document.getElementById('confirmation');
 
     rsvpForm.addEventListener('submit', (e) => {
         e.preventDefault();
-        
+
         if (!rsvpForm.checkValidity()) {
             rsvpForm.reportValidity();
             return;
         }
 
-        // 4. Kirim data ke Google Sheets
+        // Kirim data ke Google Sheets
         const formData = new FormData(rsvpForm);
         sendDataToGoogleSheet(formData);
 
-        // 5. Tampilkan konfirmasi
+        // Tampilkan konfirmasi
         rsvpForm.classList.add('hidden');
         confirmation.classList.remove('hidden');
     });
